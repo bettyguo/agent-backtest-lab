@@ -1,6 +1,6 @@
 # agent-backtest-lab
 
-> Before you trust an LLM trading agent, audit it. A statistical-rigor harness — look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, and reward-hacking detection — for trading-agent frameworks.
+> Before you trust an LLM trading agent, audit it. A statistical-rigor harness, look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, and reward-hacking detection — for trading-agent frameworks.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/badge/ci-passing-brightgreen.svg)](.github/workflows/ci.yml)
@@ -171,7 +171,7 @@ Track via GitHub issues. Per `CONTRIBUTING.md`, every new statistical method mus
 
 ## Attribution
 
-Built by Betty Guo (Dongxin Guo / 郭东欣), final-year PhD candidate in Computer Science, University of Hong Kong, advised by Prof. Siu-Ming Yiu. ORCID: [0009-0000-2388-1072](https://orcid.org/0009-0000-2388-1072). Apache-2.0.
+**Betty Guo** ([Dongxin Guo](https://bettyguo.github.io)), PhD candidate in Computer Science at [The University of Hong Kong](https://www.cs.hku.hk/), advised by [Prof. Siu-Ming Yiu](https://www.cs.hku.hk/people/academic-staff/smyiu).
 
 If this tool helps your research, a citation is appreciated. A BibTeX entry will be added when the v0.1.0 release is tagged.
 
