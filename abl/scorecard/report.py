@@ -74,19 +74,27 @@ class Scorecard:
 
 
 def _sharpe_ci(stats_obj, alpha: float = 0.05) -> tuple[float, float]:
-    """A simple Lo (2002)-style normal-approx CI for the annualized Sharpe.
+    """Normal-approximation CI for the observed-cadence Sharpe ratio.
 
-    Var(SR_hat) ~ (1 + 0.5 * SR^2) / T (Gaussian-IID approximation; we acknowledge the
-    higher-moment terms are dropped here — DSR/PSR pick those up). The CI is constructed
-    on the observed (per-period) Sharpe and then scaled by sqrt(annualization).
+    Uses the IID-Gaussian variance Var(ŜR) ≈ (1 + 0.5·ŜR²)/T (Lo 2002 Eq. 6 under
+    the IID assumption). The CI is constructed on the observed-cadence Sharpe; the
+    caller scales the bounds by √annualization.
+
+    HONEST CAVEAT: this estimator does NOT correct for serial correlation in the
+    return series. Real strategy returns are autocorrelated and the IID standard
+    error UNDERSTATES variance — that is, the printed CI is narrower than the truly
+    appropriate one. For strategies with material autocorrelation, the user should
+    interpret the CI as a lower-bound on uncertainty. PSR and DSR pick up the
+    higher-moment corrections; a HAC / Newey-West SE for the CI itself is a planned
+    extension (see roadmap).
+
+    Reference: Lo, A. W. (2002). The Statistics of Sharpe Ratios. *Financial
+    Analysts Journal*, 58(4), 36-52.
     """
     z = norm.ppf(1.0 - alpha / 2)
     se_obs = np.sqrt((1.0 + 0.5 * stats_obj.sharpe_observed ** 2) / stats_obj.n_obs)
     lo_obs = stats_obj.sharpe_observed - z * se_obs
     hi_obs = stats_obj.sharpe_observed + z * se_obs
-    scale = np.sqrt(stats_obj.n_obs / stats_obj.n_obs)  # no-op; annualization applied below
-    _ = scale
-    # Apply the annualization factor used by the caller
     return lo_obs, hi_obs
 
 
@@ -248,7 +256,7 @@ def render_markdown(sc: Scorecard) -> str:
     lines.append(f"| Net total return | {sc.net_return_total:+.4%} |")
     lines.append(f"| Net annualized return | {sc.net_return_annualized:+.4%} |")
     lines.append(f"| Sharpe (annualized) | {sc.sharpe_annualized:+.3f} |")
-    lines.append(f"| Sharpe 95% CI (annualized) | [{sc.sharpe_ci_95_low:+.3f}, {sc.sharpe_ci_95_high:+.3f}] |")
+    lines.append(f"| Sharpe 95% CI (annualized)¹ | [{sc.sharpe_ci_95_low:+.3f}, {sc.sharpe_ci_95_high:+.3f}] |")
     lines.append(f"| PSR (vs SR=0) | {sc.psr:.4f} |")
     if sc.dsr is not None:
         lines.append(f"| **DSR** (deflated, N_trials={sc.n_trials_reported}, SR₀={sc.sr_0:.3f}) | **{sc.dsr:.4f}** |")
@@ -303,6 +311,12 @@ def render_markdown(sc: Scorecard) -> str:
 
     lines.append("")
     lines.append("---")
+    lines.append("")
+    lines.append(
+        "¹ The Sharpe 95% CI uses the IID-Gaussian normal approximation (Lo 2002). "
+        "It does NOT correct for serial correlation in the return series; for autocorrelated "
+        "strategies treat it as a lower bound on uncertainty."
+    )
     lines.append("")
     lines.append(f"_{DISCLAIMER_LINE}_")
     lines.append("")

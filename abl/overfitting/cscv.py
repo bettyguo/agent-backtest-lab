@@ -38,6 +38,15 @@ Practical tuning
 For T ≈ 252 and S = 16, C(16, 8) = 12870 partitions, manageable. For larger N×T or
 finer partitions the cost grows quickly; we cap at 50k partitions and sample uniformly
 if needed (documented).
+
+Small-N note
+------------
+The PBO estimator is well-defined for N >= 2, but the logit-of-rank quantity has very
+high variance for small N (say N < 10). The fixture tests cover N = 16, 20, 50 — the
+regime where PBO is informative. For N = 3 or 4, the estimator can return values close
+to 0 or 1 just from rank discretization. Users with very few candidate strategies should
+interpret PBO with extra skepticism, and prefer DSR (which doesn't need a cross-strategy
+distribution).
 """
 from __future__ import annotations
 

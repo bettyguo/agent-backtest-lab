@@ -20,6 +20,8 @@ Independent recent work (Li et al. 2026, [arXiv:2505.07078](https://arxiv.org/ab
 
 `agent-backtest-lab` is the scrutiny.
 
+> **How this differs from backtesting.py / vectorbt / zipline:** those are *execution engines* (PnL accumulators, order simulators). `agent-backtest-lab` is a *statistical-audit harness* — the leakage firewall, the multiple-testing correction, the calibration and overfitting diagnostics, the honest scorecard. It can sit on top of any engine. The work it does is the work those tools deliberately leave to the user.
+
 ---
 
 ## 30-second quickstart

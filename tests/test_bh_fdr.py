@@ -54,6 +54,11 @@ def test_bh_controls_fdr_under_independence():
     1000 reps × 200 hypotheses each. We construct pvals: 40 from a beta(0.1, 1) distribution
     (concentrated near 0 — true H1 with strong signal) and 160 uniform (true H0). BH at α=0.05
     should achieve empirical FDR ≤ 0.05 + a small Monte Carlo slack.
+
+    Note: this scenario is friendly to BH (alts heavily concentrated at small p-values, so
+    most rejections are true positives). The textbook-example test (`test_bh_textbook_example`)
+    exercises the marginal-rejection mechanics independently — together they cover both the
+    bound and the boundary behavior.
     """
     rng = np.random.default_rng(20260514)
     n_rep = 1000
