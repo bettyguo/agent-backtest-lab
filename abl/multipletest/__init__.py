@@ -20,7 +20,14 @@ from abl.multipletest.bootstrap import BCaResult, bca_bootstrap_ci, bca_sharpe_c
 from abl.multipletest.dsr import deflated_sharpe, expected_max_sharpe_under_null
 from abl.multipletest.hac import HACSharpeResult, auto_lag_truncation, hac_sharpe_ci, newey_west_eta
 from abl.multipletest.psr import probabilistic_sharpe, sharpe_ratio
+from abl.multipletest.risk_metrics import (
+    RiskMetrics,
+    information_ratio,
+    risk_metrics_summary,
+    sortino_ratio,
+)
 from abl.multipletest.spa import SPAResult, reality_check_spa
+from abl.multipletest.stepwise import StepwiseResult, bonferroni_holm, romano_wolf_stepwise
 
 __all__ = [
     "benjamini_hochberg",
@@ -37,4 +44,11 @@ __all__ = [
     "bca_bootstrap_ci",
     "bca_sharpe_ci",
     "BCaResult",
+    "bonferroni_holm",
+    "romano_wolf_stepwise",
+    "StepwiseResult",
+    "sortino_ratio",
+    "information_ratio",
+    "risk_metrics_summary",
+    "RiskMetrics",
 ]

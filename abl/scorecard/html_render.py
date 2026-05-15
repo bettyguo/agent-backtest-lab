@@ -120,6 +120,16 @@ def render_html(sc: Scorecard, *, plots_dir: str | Path | None = None) -> str:
         )
     if sc.pbo is not None:
         parts.append(f"<tr><td>PBO</td><td class='num'>{sc.pbo:.3f}</td></tr>")
+    if np.isfinite(sc.sortino_annualized):
+        parts.append(
+            f"<tr><td>Sortino (annualized, MAR=0)</td>"
+            f"<td class='num'>{sc.sortino_annualized:+.3f}</td></tr>"
+        )
+    if sc.information_ratio_annualized is not None:
+        parts.append(
+            f"<tr><td>Information Ratio (vs buy-and-hold, ann.)</td>"
+            f"<td class='num'>{sc.information_ratio_annualized:+.3f}</td></tr>"
+        )
     parts.append("</tbody></table>")
 
     parts.append("<h2>Drawdown</h2>")

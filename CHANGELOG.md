@@ -2,6 +2,41 @@
 
 All notable changes to `agent-backtest-lab` are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-05-15
+
+"More multiple-testing, more risk metrics." 150 fixture tests pass.
+
+### Added
+
+- **Bonferroni-Holm step-down FWER control** (`abl.multipletest.stepwise.bonferroni_holm`).
+  Holm (1979). Stricter than BH (controls FWER, not FDR) and more powerful than naive
+  Bonferroni. The right choice when controlling P(at least one false rejection) matters
+  more than the expected proportion of false rejections — common in regulatory settings.
+- **Romano-Wolf stepwise multiple testing** (`abl.multipletest.stepwise.romano_wolf_stepwise`).
+  Romano & Wolf (2005). Stepwise FWER procedure built on the stationary block bootstrap;
+  generally more powerful than Bonferroni-Holm because it uses the joint distribution
+  of the test statistics. Operates on the same loss-differential matrix as Reality Check / SPA.
+- **Sortino ratio** (`abl.multipletest.risk_metrics.sortino_ratio`). Sortino & Price (1994).
+  Penalizes only downside volatility; complements Sharpe when return distributions are
+  asymmetric.
+- **Information Ratio** (`abl.multipletest.risk_metrics.information_ratio`). Tracking-
+  error-normalized excess return vs benchmark; computed against the `buy_and_hold`
+  baseline when present and surfaced in the scorecard.
+- **Scorecard polish.** Sortino and IR added to the "Net-of-cost performance" table in
+  both Markdown and HTML renderers; backward-compatible additions to the `Scorecard`
+  dataclass (`sortino_annualized`, `information_ratio_annualized`).
+
+### Added (tests)
+
+- `tests/test_stepwise.py` (7 tests) — Holm textbook example matches hand-computed
+  rejections, no rejections on all-large p-values, Holm rejects ≤ BH count across
+  20 simulated samples, invalid-input guards. Romano-Wolf raises ≤ 2 false rejections
+  on pure noise (FWER ~ 0.05) and rejects a clear winner.
+- `tests/test_risk_metrics.py` (8 tests) — Sortino NaN when downside is zero, finite
+  when downside present, IR vs self is NaN (zero tracking error), IR > 1 when
+  consistently outperforming, IR < -1 when consistently underperforming, summary
+  combinators with and without benchmark.
+
 ## [0.5.0] — 2026-05-15
 
 "Better CIs, more baselines." 134 fixture tests pass.

@@ -23,6 +23,7 @@ from abl.leakage.reward_hacking import RewardHackingFlag, detect_reward_hacking
 from abl.multipletest.dsr import deflated_sharpe
 from abl.multipletest.hac import hac_sharpe_ci
 from abl.multipletest.psr import probabilistic_sharpe, sharpe_ratio
+from abl.multipletest.risk_metrics import risk_metrics_summary
 from abl.overfitting.cscv import OverfittingFlag
 from abl.scorecard.breakdown import per_ticker_breakdown
 from abl.scorecard.drawdown import drawdown_stats
@@ -68,6 +69,10 @@ class Scorecard:
     max_drawdown: float
     longest_underwater_days: int
     calmar_ratio: float
+
+    # Downside / benchmark-relative metrics
+    sortino_annualized: float
+    information_ratio_annualized: float | None  # vs buy-and-hold; None if not computed
 
     # Per-ticker breakdown — empty if requested off; always populated by default
     ticker_breakdown: list = field(default_factory=list)
@@ -152,6 +157,24 @@ def build_scorecard(
     psr = probabilistic_sharpe(rets, sr_benchmark=0.0, annualization=annualization)
     dd_stats = drawdown_stats(rets, annualization=annualization)
     ticker_rows = per_ticker_breakdown(primary.decisions, annualization=annualization)
+
+    # Look for a buy-and-hold baseline to use as the IR benchmark; align by date.
+    bah_baseline = None
+    for b in baselines or []:
+        if b.adapter_name == "buy_and_hold":
+            bah_baseline = b
+            break
+    if bah_baseline is not None:
+        common_idx = primary.daily_pnl_net.index.intersection(bah_baseline.daily_pnl_net.index)
+        bench_aligned = bah_baseline.daily_pnl_net.reindex(common_idx).dropna().to_numpy()
+        prim_aligned = primary.daily_pnl_net.reindex(common_idx).dropna().to_numpy()
+        # Reindex to the same final length
+        m = min(len(bench_aligned), len(prim_aligned))
+        risk_metrics = risk_metrics_summary(
+            prim_aligned[:m], bench_aligned[:m], annualization=annualization
+        )
+    else:
+        risk_metrics = risk_metrics_summary(rets, None, annualization=annualization)
 
     dsr: float | None = None
     sr_0: float | None = None
@@ -239,6 +262,11 @@ def build_scorecard(
         max_drawdown=dd_stats.max_drawdown,
         longest_underwater_days=dd_stats.longest_underwater_days,
         calmar_ratio=dd_stats.calmar_ratio,
+        sortino_annualized=risk_metrics.sortino_annualized,
+        information_ratio_annualized=(
+            risk_metrics.information_ratio_annualized
+            if np.isfinite(risk_metrics.information_ratio_annualized) else None
+        ),
         ticker_breakdown=ticker_rows,
         baselines=baseline_rows,
         ece=ece,
@@ -323,6 +351,12 @@ def render_markdown(sc: Scorecard) -> str:
         lines.append("| DSR | not computed (n_trials_reported=1, var_trial_sharpe=0) |")
     if sc.pbo is not None:
         lines.append(f"| PBO (Probability of Backtest Overfitting) | {sc.pbo:.3f} |")
+    if np.isfinite(sc.sortino_annualized):
+        lines.append(f"| Sortino (annualized, MAR=0) | {sc.sortino_annualized:+.3f} |")
+    if sc.information_ratio_annualized is not None:
+        lines.append(
+            f"| Information Ratio (vs buy-and-hold, ann.) | {sc.information_ratio_annualized:+.3f} |"
+        )
 
     lines.append("")
     lines.append("## Drawdown")
