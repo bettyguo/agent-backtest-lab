@@ -23,6 +23,7 @@ from abl.baselines import (
 from abl.config import DEFAULT_ANNUALIZATION, DEFAULT_COST_BPS, DISCLAIMER_LINE
 from abl.costs.models import ConstantBpsCost
 from abl.data.loaders import load_fixture
+from abl.scorecard.html_render import render_html
 from abl.scorecard.report import build_scorecard, render_json, render_markdown
 from abl.types import Universe, Window
 
@@ -130,9 +131,14 @@ def evaluate(adapter_spec, window, cost_bps, annualization, n_trials, var_trial_
             click.echo(f"[abl] wrote {out_dir / 'equity.png'}")
             click.echo(f"[abl] wrote {out_dir / 'drawdown.png'}")
 
+    # Always render the self-contained HTML report; embeds plots if present.
+    (out_dir / "report.html").write_text(
+        render_html(sc, plots_dir=out_dir if plots else None), encoding="utf-8"
+    )
     if not quiet:
         click.echo(f"[abl] wrote {out_dir / 'report.md'}")
         click.echo(f"[abl] wrote {out_dir / 'report.json'}")
+        click.echo(f"[abl] wrote {out_dir / 'report.html'}")
 
 
 @cli.command()

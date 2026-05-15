@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-backtest-lab"
-version = "0.3.0"
+version = "0.4.0"
 description = "Before you trust an LLM trading agent, audit it. A statistical-rigor harness — look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, and reward-hacking detection — for trading-agent frameworks."
 readme = "README.md"
 license = { text = "Apache-2.0" }

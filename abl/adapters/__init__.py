@@ -9,7 +9,15 @@ The protocol is in `abl.types.StrategyAdapter`. Three concrete adapters live her
 from __future__ import annotations
 
 from abl.adapters.callable_adapter import CallableAdapter
+from abl.adapters.fingpt import FinGPTAdapter
+from abl.adapters.finrobot import FinRobotAdapter
 from abl.adapters.plain_strategy import PlainStrategyAdapter
 from abl.adapters.tradingagents import TradingAgentsAdapter
 
-__all__ = ["CallableAdapter", "PlainStrategyAdapter", "TradingAgentsAdapter"]
+__all__ = [
+    "CallableAdapter",
+    "PlainStrategyAdapter",
+    "TradingAgentsAdapter",
+    "FinGPTAdapter",
+    "FinRobotAdapter",
+]

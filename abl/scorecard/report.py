@@ -19,6 +19,7 @@ from abl.config import (
     DISCLAIMER_LINE,
 )
 from abl.leakage.detector import LeakageFlag, detect_leakage
+from abl.leakage.reward_hacking import RewardHackingFlag, detect_reward_hacking
 from abl.multipletest.dsr import deflated_sharpe
 from abl.multipletest.hac import hac_sharpe_ci
 from abl.multipletest.psr import probabilistic_sharpe, sharpe_ratio
@@ -80,6 +81,7 @@ class Scorecard:
 
     leakage_flags: list[LeakageFlag] = field(default_factory=list)
     overfitting_flag: OverfittingFlag | None = None
+    reward_hacking_flags: list[RewardHackingFlag] = field(default_factory=list)
     universe_flags: list[UniverseFlag] = field(default_factory=list)
 
     generated_at_utc: str = ""
@@ -205,6 +207,11 @@ def build_scorecard(
     leakage_report = detect_leakage(
         audit_events=primary.audit_events, decisions=primary.decisions
     )
+    reward_hacking = detect_reward_hacking(
+        returns=primary.daily_pnl_net,
+        decisions=primary.decisions,
+        annualization=annualization,
+    )
 
     return Scorecard(
         adapter_name=primary.adapter_name,
@@ -240,6 +247,7 @@ def build_scorecard(
         confidence_emitted=confidence_emitted,
         leakage_flags=leakage_report.flags,
         overfitting_flag=(pbo_result["flag"] if pbo_result is not None else None),
+        reward_hacking_flags=reward_hacking,
         universe_flags=list(universe_flags or _default_universe_flags(primary)),
         generated_at_utc=datetime.now(timezone.utc).isoformat(),
     )
@@ -265,12 +273,15 @@ def _default_universe_flags(result: BacktestResult) -> list[UniverseFlag]:
 def render_markdown(sc: Scorecard) -> str:
     """Render a Scorecard to Markdown. Disclaimer block at top, table of metrics, flags
     section, baselines table, attribution at bottom. No gross-only numbers."""
+    rh_critical = any(f.severity == "critical" for f in sc.reward_hacking_flags)
     if sc.leakage_flags:
         banner = "🔴 **LEAKAGE FLAGS RAISED** — interpret with extreme caution."
+    elif rh_critical:
+        banner = "🔴 **REWARD-HACKING FLAG (critical)** — strategy looks tuned to the IS window."
     elif sc.overfitting_flag is not None and sc.overfitting_flag.severity == "critical":
         banner = "🔴 **OVERFITTING FLAG (critical)** — the in-sample-best is reliably bad OOS."
-    elif sc.overfitting_flag is not None:
-        banner = "🟡 **OVERFITTING FLAG (warn)** — elevated probability of backtest overfitting."
+    elif sc.overfitting_flag is not None or sc.reward_hacking_flags:
+        banner = "🟡 **WARN-LEVEL FLAGS** — see the Flags section below."
     elif (sc.dsr is not None and sc.dsr < 0.5) or sc.psr < 0.5:
         banner = "🟡 **Caution** — DSR/PSR below 0.5; the observed Sharpe is not statistically distinguishable from the multiple-testing null."
     else:
@@ -381,6 +392,10 @@ def render_markdown(sc: Scorecard) -> str:
         of = sc.overfitting_flag
         lines.append("### Overfitting")
         lines.append(f"- **[{of.severity.upper()}] {of.code}** — {of.message}")
+    if sc.reward_hacking_flags:
+        lines.append("### Reward hacking / window overfitting")
+        for f in sc.reward_hacking_flags:
+            lines.append(f"- **[{f.severity.upper()}] {f.code}** — {f.message}")
     if sc.universe_flags:
         lines.append("### Universe")
         for f in sc.universe_flags:
@@ -424,5 +439,6 @@ def render_json(sc: Scorecard) -> str:
     payload = asdict(sc)
     payload["leakage_flags"] = [_flag_to_dict(f) for f in sc.leakage_flags]
     payload["overfitting_flag"] = _flag_to_dict(sc.overfitting_flag)
+    payload["reward_hacking_flags"] = [_flag_to_dict(f) for f in sc.reward_hacking_flags]
     payload["universe_flags"] = [_flag_to_dict(f) for f in sc.universe_flags]
     return json.dumps(payload, indent=2, default=str)

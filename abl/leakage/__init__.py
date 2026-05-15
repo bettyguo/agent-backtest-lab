@@ -20,5 +20,13 @@ from abl.leakage.detector import (
     LeakageReport,
     detect_leakage,
 )
+from abl.leakage.reward_hacking import RewardHackingFlag, detect_reward_hacking
 
-__all__ = ["LeakageFlag", "LeakageReport", "detect_leakage", "parse_audit_events"]
+__all__ = [
+    "LeakageFlag",
+    "LeakageReport",
+    "detect_leakage",
+    "parse_audit_events",
+    "RewardHackingFlag",
+    "detect_reward_hacking",
+]

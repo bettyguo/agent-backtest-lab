@@ -22,6 +22,7 @@ from abl.scorecard.breakdown import (
 )
 from abl.scorecard.drawdown import DrawdownStats, drawdown_stats
 from abl.scorecard.flags import UniverseFlag
+from abl.scorecard.html_render import render_html
 from abl.scorecard.report import (
     BaselineRow,
     Scorecard,
@@ -43,4 +44,5 @@ __all__ = [
     "build_scorecard",
     "render_markdown",
     "render_json",
+    "render_html",
 ]

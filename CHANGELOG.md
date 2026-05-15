@@ -2,6 +2,51 @@
 
 All notable changes to `agent-backtest-lab` are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-15
+
+"More adapters, reward-hacking detection, HTML report." 124 fixture tests pass.
+
+### Added
+
+- **FinGPT adapter** (`abl.adapters.fingpt.FinGPTAdapter`). Wraps a user-supplied
+  sentiment-in-[-1, +1] callable. Honest about what FinGPT emits: a sentiment, not a
+  calibrated probability. `|score|` becomes the confidence — feeds cleanly into ECE
+  and conformal analysis. The `fingpt` framework itself stays optional; users supply
+  the callable.
+- **FinRobot adapter** (`abl.adapters.finrobot.FinRobotAdapter`). Wraps a
+  `(decision_text, confidence)` callable. Reuses the defensive TradingAgents
+  direction parser; safely drops out-of-range confidences.
+- **Reward-hacking detection** (`abl.leakage.reward_hacking.detect_reward_hacking`).
+  Three single-strategy heuristics for window-overfitting (complementary to
+  cross-strategy PBO):
+  - `SHARPE_DROP_IS_OOS` — Sharpe collapses from the first ~70% of the window to the
+    final ~30%. Critical when the drop is large and OOS Sharpe goes negative.
+  - `DRAWDOWN_WIDENS_OOS` — max drawdown materially worse on holdout.
+  - `CALIBRATION_DIVERGES_OOS` — ECE rises sharply OOS when the agent emits a confidence.
+  Auto-included in every scorecard; surfaces in both Markdown and HTML reports.
+- **HTML scorecard renderer** (`abl.scorecard.html_render.render_html`). Self-contained
+  single-file HTML with inline CSS, color-coded banner, base64-embedded plots when
+  available. Same not-advice disclaimer block at the top, attribution at the bottom.
+  `abl evaluate` now writes `report.md`, `report.json`, AND `report.html` by default.
+
+### Changed
+
+- `Scorecard.reward_hacking_flags` is a new field. Backward-compatible addition.
+- Banner logic in `render_markdown` and `render_html` now flips red on a critical
+  reward-hacking flag, not just on leakage / critical overfitting.
+
+### Added (tests)
+
+- `tests/test_new_adapters.py` (8 tests) — FinGPT positive/negative/below-threshold,
+  NaN handling, invalid threshold; FinRobot parses text, drops out-of-range confidence,
+  handles None decisions.
+- `tests/test_reward_hacking.py` (5 tests) — no flag on consistent series, critical
+  flag on Sharpe collapse, drawdown-widening flag, too-short-series returns empty,
+  calibration-divergence flag.
+- `tests/test_html_render.py` (4 tests) — disclaimer + attribution present, baselines
+  + per-ticker breakdown rendered, plots embed as base64 data URIs, no gross-return
+  leakage in the HTML.
+
 ## [0.3.0] — 2026-05-15
 
 "Real data, visuals, breakdown." 107 fixture tests pass.
