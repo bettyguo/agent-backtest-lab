@@ -14,6 +14,12 @@ There is no flag to suppress these.
 """
 from __future__ import annotations
 
+from abl.scorecard.breakdown import (
+    TickerBreakdownRow,
+    cross_strategy_correlation,
+    effective_n_trials,
+    per_ticker_breakdown,
+)
 from abl.scorecard.drawdown import DrawdownStats, drawdown_stats
 from abl.scorecard.flags import UniverseFlag
 from abl.scorecard.report import (
@@ -30,6 +36,10 @@ __all__ = [
     "UniverseFlag",
     "DrawdownStats",
     "drawdown_stats",
+    "TickerBreakdownRow",
+    "per_ticker_breakdown",
+    "cross_strategy_correlation",
+    "effective_n_trials",
     "build_scorecard",
     "render_markdown",
     "render_json",

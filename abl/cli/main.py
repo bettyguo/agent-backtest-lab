@@ -76,8 +76,9 @@ def cli() -> None:
 @click.option("--n-trials", default=1, type=int, help="Number of trials user reports having tried (for DSR)")
 @click.option("--var-trial-sharpe", default=0.0, type=float, help="Cross-trial Sharpe variance (for DSR)")
 @click.option("--out", default="abl_out", type=click.Path(file_okay=False), help="Output directory")
+@click.option("--plots/--no-plots", default=True, help="Render equity curve / drawdown / reliability PNGs")
 @click.option("--quiet/--no-quiet", default=False, help="Suppress progress chatter (does NOT silence the disclaimer)")
-def evaluate(adapter_spec, window, cost_bps, annualization, n_trials, var_trial_sharpe, out, quiet):
+def evaluate(adapter_spec, window, cost_bps, annualization, n_trials, var_trial_sharpe, out, plots, quiet):
     """Run the standard evaluation: adapter + three baselines + scorecard."""
     _print_banner()
     if not quiet:
@@ -115,6 +116,20 @@ def evaluate(adapter_spec, window, cost_bps, annualization, n_trials, var_trial_
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "report.md").write_text(render_markdown(sc), encoding="utf-8")
     (out_dir / "report.json").write_text(render_json(sc), encoding="utf-8")
+
+    if plots:
+        from abl.plots.renderers import plot_drawdown, plot_equity_curve
+
+        baseline_series = {b.adapter_name: b.daily_pnl_net for b in baselines}
+        plot_equity_curve(
+            primary.daily_pnl_net, baseline_series,
+            out_dir / "equity.png", primary_name=adapter_spec,
+        )
+        plot_drawdown(primary.daily_pnl_net, out_dir / "drawdown.png")
+        if not quiet:
+            click.echo(f"[abl] wrote {out_dir / 'equity.png'}")
+            click.echo(f"[abl] wrote {out_dir / 'drawdown.png'}")
+
     if not quiet:
         click.echo(f"[abl] wrote {out_dir / 'report.md'}")
         click.echo(f"[abl] wrote {out_dir / 'report.json'}")

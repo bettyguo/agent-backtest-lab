@@ -23,6 +23,7 @@ from abl.multipletest.dsr import deflated_sharpe
 from abl.multipletest.hac import hac_sharpe_ci
 from abl.multipletest.psr import probabilistic_sharpe, sharpe_ratio
 from abl.overfitting.cscv import OverfittingFlag
+from abl.scorecard.breakdown import per_ticker_breakdown
 from abl.scorecard.drawdown import drawdown_stats
 from abl.scorecard.flags import UniverseFlag
 from abl.types import BacktestResult
@@ -66,6 +67,9 @@ class Scorecard:
     max_drawdown: float
     longest_underwater_days: int
     calmar_ratio: float
+
+    # Per-ticker breakdown — empty if requested off; always populated by default
+    ticker_breakdown: list = field(default_factory=list)
 
     baselines: list[BaselineRow] = field(default_factory=list)
 
@@ -145,6 +149,7 @@ def build_scorecard(
         sharpe_hac_lags = None
     psr = probabilistic_sharpe(rets, sr_benchmark=0.0, annualization=annualization)
     dd_stats = drawdown_stats(rets, annualization=annualization)
+    ticker_rows = per_ticker_breakdown(primary.decisions, annualization=annualization)
 
     dsr: float | None = None
     sr_0: float | None = None
@@ -227,6 +232,7 @@ def build_scorecard(
         max_drawdown=dd_stats.max_drawdown,
         longest_underwater_days=dd_stats.longest_underwater_days,
         calmar_ratio=dd_stats.calmar_ratio,
+        ticker_breakdown=ticker_rows,
         baselines=baseline_rows,
         ece=ece,
         conformal_empirical_coverage=conformal_emp,
@@ -318,6 +324,25 @@ def render_markdown(sc: Scorecard) -> str:
         lines.append(f"| Calmar ratio (ann. ret / |max DD|) | {sc.calmar_ratio:+.3f} |")
     else:
         lines.append("| Calmar ratio | n/a (no drawdown observed) |")
+
+    if sc.ticker_breakdown:
+        lines.append("")
+        lines.append("## Per-ticker breakdown")
+        lines.append("")
+        lines.append(
+            "_A real edge spreads across the universe; a fragile edge concentrates in a "
+            "single ticker. Hit-rate is over non-FLAT calls only._"
+        )
+        lines.append("")
+        lines.append("| Ticker | Decisions | Non-FLAT | Hit rate | Mean contribution | Sharpe (ann.) |")
+        lines.append("|---|---|---|---|---|---|")
+        for row in sc.ticker_breakdown:
+            hr = f"{row.hit_rate:.3f}" if np.isfinite(row.hit_rate) else "—"
+            mc = f"{row.mean_ret_contribution:+.4%}" if np.isfinite(row.mean_ret_contribution) else "—"
+            sr = f"{row.sharpe_annualized:+.3f}" if np.isfinite(row.sharpe_annualized) else "—"
+            lines.append(
+                f"| {row.ticker} | {row.n_decisions} | {row.n_non_flat} | {hr} | {mc} | {sr} |"
+            )
 
     lines.append("")
     lines.append("## Baselines (same window, same cost model)")

@@ -2,6 +2,52 @@
 
 All notable changes to `agent-backtest-lab` are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-05-15
+
+"Real data, visuals, breakdown." 107 fixture tests pass.
+
+### Added
+
+- **yfinance loader** (`abl.data.yfinance_loader.load_yfinance`). Pulls raw OHLCV plus
+  the dividends/splits actions table from Yahoo Finance — **and REFUSES to read
+  `Adj Close`** because Yahoo's adjusted series is retroactively back-adjusted (the
+  single most common silent leakage in retail backtests). The leakage firewall + PITView
+  reconstruct the adjusted series at as_of using only known corporate actions. Optional
+  dependency: `pip install "agent-backtest-lab[yfinance]"`. Tests are network-free —
+  yfinance is mocked.
+- **Matplotlib plotters** (`abl.plots`). Three renderers, headless (Agg backend), each
+  stamped with the not-advice disclaimer at the bottom:
+  - `plot_equity_curve(...)` — primary strategy vs baselines, net of cost.
+  - `plot_drawdown(...)` — drawdown curve with max-DD trough annotated.
+  - `plot_reliability_diagram(...)` — confidence bins vs empirical accuracy with the
+    perfect-calibration diagonal.
+- **Per-ticker breakdown** (`abl.scorecard.breakdown.per_ticker_breakdown`). Per-ticker
+  hit rate, decision count, mean return contribution, and ticker-level annualized
+  Sharpe. Auto-included in every scorecard so users see whether the edge is robust or
+  concentrates in one ticker.
+- **Cross-strategy correlation** (`cross_strategy_correlation` + `effective_n_trials`).
+  Pearson correlation matrix of N strategies' return series, plus the participation-ratio
+  heuristic for "effective N" — a sanity check before using `n_trials_reported = N` in DSR.
+  High correlation → effective N << N → DSR under-corrects unless you pass the smaller value.
+
+### Changed
+
+- CLI `abl evaluate` now renders `equity.png` and `drawdown.png` alongside the Markdown
+  and JSON reports by default. `--no-plots` disables.
+- Scorecard Markdown now includes a "Per-ticker breakdown" section between the drawdown
+  table and the baselines table.
+- `Scorecard.ticker_breakdown` is a new field on the dataclass.
+
+### Added (tests)
+
+- `tests/test_yfinance_loader.py` (7 tests) — `Adj Close` IS REFUSED (load-bearing
+  assertion), corporate-actions extraction handles dividends + splits + zero-filtering,
+  clean ImportError when yfinance is missing, end-to-end with a stub.
+- `tests/test_plots.py` (4 tests) — equity / drawdown / reliability PNGs are written.
+- `tests/test_breakdown.py` (8 tests) — hit rates correct, FLAT-only tickers give NaN,
+  identity correlation = 1.0, large-N independents → ~0, effective N = N on identity,
+  effective N → 1 on all-ones, intermediate block correlation gives ~2.
+
 ## [0.2.0] — 2026-05-15
 
 "More rigor." Five additions, each motivated by the Phase 6 hostile review or by user-feedback paths well-trodden in the academic literature. 87 fixture tests pass.
