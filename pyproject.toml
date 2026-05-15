@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-backtest-lab"
+version = "0.1.0"
+description = "Before you trust an LLM trading agent, audit it. A statistical-rigor harness — look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, and reward-hacking detection — for trading-agent frameworks."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Betty Guo (Dongxin Guo / 郭东欣)", email = "bettydxguo@gmail.com" }
+]
+requires-python = ">=3.10"
+keywords = [
+    "backtesting",
+    "evaluation",
+    "trading-agents",
+    "llm",
+    "statistical-rigor",
+    "leakage-detection",
+    "multiple-testing",
+    "calibration",
+    "conformal-prediction",
+    "deflated-sharpe",
+    "research-tool",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "click>=8.1",
+]
+
+[project.optional-dependencies]
+yfinance = ["yfinance>=0.2"]
+tradingagents = []  # users install TauricResearch/TradingAgents separately
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+abl = "abl.cli.main:cli"
+
+[project.urls]
+Homepage = "https://github.com/bettyguo/agent-backtest-lab"
+Issues = "https://github.com/bettyguo/agent-backtest-lab/issues"
+Repository = "https://github.com/bettyguo/agent-backtest-lab"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["abl*"]
+
+[tool.setuptools.package-data]
+abl = ["data/fixtures/*.parquet", "data/fixtures/*.csv"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]  # long lines OK — many docstrings cite formulas
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
