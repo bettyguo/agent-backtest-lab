@@ -171,7 +171,7 @@ Track via GitHub issues. Per `CONTRIBUTING.md`, every new statistical method mus
 
 ## Attribution
 
-Built by Betty Guo (Dongxin Guo / 郭东欣), final-year PhD candidate in Computer Science, University of Hong Kong, advised by Prof. Siu-Ming Yiu. ORCID: [0009-0000-2388-1072](https://orcid.org/0009-0000-2388-1072). Apache-2.0.
+**Betty Guo** ([Dongxin Guo](https://bettyguo.github.io)), PhD candidate in Computer Science at [The University of Hong Kong](https://www.cs.hku.hk/), advised by [Prof. Siu-Ming Yiu](https://www.cs.hku.hk/people/academic-staff/smyiu).
 
 If this tool helps your research, a citation is appreciated. A BibTeX entry will be added when the v0.1.0 release is tagged.
 
