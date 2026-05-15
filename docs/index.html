@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>agent-backtest-lab — audit your LLM trading agent before you trust it</title>
+  <meta name="description" content="A statistical-audit harness for LLM trading-agent frameworks. Look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, reward-hacking detection. Research tool — not financial advice." />
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --muted: #555;
+      --accent: #1f4e8c;
+      --warn: #f0ad4e;
+      --bad: #c0392b;
+      --good: #2e7d32;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --border: #e2e2e2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 4rem;
+      color: var(--ink);
+      line-height: 1.55;
+      background: var(--bg);
+    }
+    header { padding: 1.5rem 0 0.5rem; }
+    h1 {
+      margin: 0 0 0.4rem;
+      font-size: 2rem;
+      letter-spacing: -0.01em;
+      color: var(--accent);
+    }
+    h1 .v {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-left: 0.5rem;
+      letter-spacing: 0;
+    }
+    .tagline {
+      font-size: 1.15rem;
+      color: var(--ink);
+      margin: 0 0 1.2rem;
+    }
+    .disclaimer {
+      background: #fff8e1;
+      border-left: 4px solid var(--warn);
+      padding: 0.9rem 1.1rem;
+      margin: 1.2rem 0;
+      font-size: 0.95rem;
+      border-radius: 4px;
+    }
+    .disclaimer strong { color: #5a4400; }
+    .links a {
+      display: inline-block;
+      padding: 0.5rem 0.9rem;
+      margin: 0.2rem 0.4rem 0.2rem 0;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 0.92rem;
+    }
+    .links a.secondary {
+      background: white;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    h2 {
+      margin-top: 2.2rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 2px solid var(--accent);
+      color: var(--accent);
+    }
+    .demos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .demo-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+    }
+    .demo-card h3 { margin: 0 0 0.3rem; font-size: 1.05rem; color: var(--accent); }
+    .demo-card p  { margin: 0.3rem 0; font-size: 0.92rem; color: var(--muted); }
+    .demo-card .links a { display: inline-block; margin-top: 0.5rem; padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0.5rem 0 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 0.93rem;
+    }
+    th, td { border-bottom: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; }
+    th { background: #f3f3f3; font-weight: 600; }
+    code, pre {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.88rem;
+    }
+    pre {
+      background: #20232a;
+      color: #f1f1f1;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      line-height: 1.4;
+    }
+    .footnote {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .attribution {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-style: italic;
+    }
+    ul.tight { margin: 0.4rem 0 0.4rem 1.2rem; padding: 0; }
+    ul.tight li { margin: 0.15rem 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>agent-backtest-lab<span class="v">v0.6.0 · 150 fixture tests passing</span></h1>
+  <p class="tagline">Before you trust an LLM trading agent, audit it.</p>
+  <p>A statistical-audit harness for trading-agent frameworks — look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, and reward-hacking detection.</p>
+</header>
+
+<div class="disclaimer">
+  <strong>This is a research and evaluation tool. It is not financial, investment, or trading advice.</strong>
+  It does not execute trades or connect to brokerages. It exists to help researchers and practitioners
+  rigorously measure how trading-agent frameworks actually perform — including, and especially, when
+  they perform badly. Backtest results are not predictive of live performance.
+</div>
+
+<div class="links">
+  <a href="https://github.com/bettyguo/agent-backtest-lab">GitHub repo</a>
+  <a class="secondary" href="https://github.com/bettyguo/agent-backtest-lab#readme">README</a>
+  <a class="secondary" href="METHODS.md">Methods doc</a>
+  <a class="secondary" href="DISCLAIMERS.md">Full disclaimer text</a>
+</div>
+
+<h2>The problem this tool exists to make impossible to ignore</h2>
+<p>
+  A trading agent shows +40% in a backtest. Was the agent good — or did it quietly see tomorrow's prices
+  through retroactively-adjusted data, get the best of 50 untracked prompt-tuning attempts, or earn
+  returns no real trader could net of costs? <code>agent-backtest-lab</code> is the library that answers
+  that question. It is not another LLM trading agent. It is the audit layer the entire category lacks.
+</p>
+
+<h2>Example reports</h2>
+<p>Two pre-rendered scorecards from the bundled synthetic fixture, generated by:</p>
+<pre>$ abl evaluate buy_and_hold --window 2020-01-06..2024-12-31 --out out/
+$ abl evaluate naive_momentum --window 2020-01-06..2024-12-31 --out out/</pre>
+
+<div class="demos">
+  <div class="demo-card">
+    <h3>buy_and_hold</h3>
+    <p>The simplest baseline: open a LONG on day one and never trade again. Net of cost; rendered with the same scorecard pipeline a real agent goes through.</p>
+    <div class="links">
+      <a href="examples/buy_and_hold/report.html">HTML scorecard →</a>
+      <a class="secondary" href="examples/buy_and_hold/report.md">Markdown</a>
+      <a class="secondary" href="examples/buy_and_hold/report.json">JSON</a>
+    </div>
+  </div>
+  <div class="demo-card">
+    <h3>naive_momentum</h3>
+    <p>A 5-day momentum signal: LONG if trailing return positive, FLAT otherwise. Useful as a "is your agent doing anything beyond trend-following?" sanity check.</p>
+    <div class="links">
+      <a href="examples/naive_momentum/report.html">HTML scorecard →</a>
+      <a class="secondary" href="examples/naive_momentum/report.md">Markdown</a>
+      <a class="secondary" href="examples/naive_momentum/report.json">JSON</a>
+    </div>
+  </div>
+</div>
+
+<p style="color: var(--muted); font-size: 0.92rem;">
+  These reports are rendered against a deterministic synthetic fixture (geometric Brownian motion
+  with known drift/vol parameters). The framing carries over to real-data runs: net of cost,
+  with CIs, multiple-testing corrected, with leakage / overfitting / reward-hacking flags surfaced
+  loudly when present.
+</p>
+
+<h2>What it does</h2>
+<table>
+  <thead>
+    <tr><th>Capability</th><th>Module</th><th>Source</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Walk-forward + purged-CV with embargo</td><td><code>abl.backtest.cv</code></td><td>López de Prado 2018, Ch. 7</td></tr>
+    <tr><td>Combinatorial Purged K-Fold</td><td><code>abl.backtest.cv</code></td><td>López de Prado 2018, Ch. 12</td></tr>
+    <tr><td>Hard leakage firewall (refuses date &gt; as_of)</td><td><code>abl.data.firewall</code></td><td>—</td></tr>
+    <tr><td>yfinance raw-only loader (refuses <code>Adj Close</code>)</td><td><code>abl.data.yfinance_loader</code></td><td>—</td></tr>
+    <tr><td>Reward-hacking detection</td><td><code>abl.leakage.reward_hacking</code></td><td>IS/OOS Sharpe drop, drawdown widening, calibration divergence</td></tr>
+    <tr><td>Transaction-cost + Almgren-style impact</td><td><code>abl.costs</code></td><td>Almgren-Chriss 2000, Almgren et al. 2005</td></tr>
+    <tr><td>BH FDR + BH-Yekutieli</td><td><code>abl.multipletest.bh</code></td><td>Benjamini-Hochberg 1995, Benjamini-Yekutieli 2001</td></tr>
+    <tr><td>Bonferroni-Holm step-down FWER</td><td><code>abl.multipletest.stepwise</code></td><td>Holm 1979</td></tr>
+    <tr><td>Romano-Wolf stepwise</td><td><code>abl.multipletest.stepwise</code></td><td>Romano &amp; Wolf 2005</td></tr>
+    <tr><td>Probabilistic Sharpe Ratio (PSR)</td><td><code>abl.multipletest.psr</code></td><td>Bailey &amp; López de Prado 2012/13</td></tr>
+    <tr><td>Deflated Sharpe Ratio (DSR)</td><td><code>abl.multipletest.dsr</code></td><td>Bailey &amp; López de Prado 2014</td></tr>
+    <tr><td>HAC / Newey-West Sharpe SE</td><td><code>abl.multipletest.hac</code></td><td>Lo 2002, Newey-West 1987/1994</td></tr>
+    <tr><td>BCa bootstrap CIs</td><td><code>abl.multipletest.bootstrap</code></td><td>Efron 1987</td></tr>
+    <tr><td>White's Reality Check / SPA</td><td><code>abl.multipletest.spa</code></td><td>White 2000, Politis-Romano 1994</td></tr>
+    <tr><td>Sortino + Information Ratio</td><td><code>abl.multipletest.risk_metrics</code></td><td>Sortino-Price 1994</td></tr>
+    <tr><td>PBO via CSCV</td><td><code>abl.overfitting.cscv</code></td><td>Bailey, Borwein, López de Prado, Zhu 2017</td></tr>
+    <tr><td>Reliability diagrams + ECE</td><td><code>abl.calibration.reliability</code></td><td>Guo et al. ICML 2017</td></tr>
+    <tr><td>Split conformal w/ rolling window</td><td><code>abl.calibration.conformal</code></td><td>Vovk-Gammerman-Shafer 2005; Angelopoulos-Bates 2021</td></tr>
+    <tr><td>Six baselines (always rendered)</td><td><code>abl.baselines</code></td><td>—</td></tr>
+    <tr><td>Five adapters: TradingAgents, FinGPT, FinRobot, callable, plain</td><td><code>abl.adapters</code></td><td>—</td></tr>
+    <tr><td>Markdown + JSON + HTML scorecards</td><td><code>abl.scorecard</code></td><td>HTML embeds plots as base64</td></tr>
+  </tbody>
+</table>
+
+<h2>Quickstart</h2>
+<pre>pip install agent-backtest-lab
+
+# Evaluate any of the bundled baselines on the synthetic fixture:
+abl evaluate buy_and_hold     --window 2020-01-06..2024-12-31 --out out/
+abl evaluate naive_momentum   --window 2020-01-06..2024-12-31 --out out/
+abl evaluate naive_mean_reversion --window 2020-01-06..2024-12-31 --out out/
+
+# Open out/report.html in any browser; identical to the demos linked above.</pre>
+
+<h2>What it deliberately is not</h2>
+<ul class="tight">
+  <li>Not a broker integration. The library never places a trade.</li>
+  <li>Not a recommendation engine. The library does not say "buy" or "sell."</li>
+  <li>Not a live-data feed. CI and quickstart run offline on a bundled synthetic fixture.</li>
+  <li>Not an alpha claim. Every reported result includes its own multiple-testing-corrected uncertainty.</li>
+</ul>
+
+<h2>Companion to TradingAgents</h2>
+<p>
+  Designed as a companion to <a href="https://github.com/TauricResearch/TradingAgents">TauricResearch/TradingAgents</a>
+  (and to FinGPT, FinRobot, and any callable strategy). Their job is to <em>generate</em> decisions; ours
+  is to <em>audit</em> them. The reference adapter wraps
+  <code>TradingAgentsGraph().propagate(ticker, date)</code> behind the same evaluation pipeline every
+  baseline goes through. <code>tradingagents</code> remains an optional dependency.
+</p>
+
+<p class="footnote">
+  agent-backtest-lab is a research tool. Not financial advice. Not a trading system. Backtests don't predict the future.
+</p>
+<p class="attribution">
+  Built by Betty Guo (Dongxin Guo / 郭东欣), PhD candidate, University of Hong Kong, advised by Prof. Siu-Ming Yiu.
+  ORCID: 0009-0000-2388-1072. Apache-2.0.
+</p>
+
+</body>
+</html>

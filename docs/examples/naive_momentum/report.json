@@ -1,0 +1,83 @@
+{
+  "adapter_name": "naive_momentum_20",
+  "universe_name": "bundled_synthetic",
+  "universe_size": 3,
+  "window_start": "2020-01-06",
+  "window_end": "2024-12-31",
+  "n_trading_days": 1259,
+  "cost_model": "constant_bps_5",
+  "annualization": 252,
+  "net_return_total": 0.13052551835509685,
+  "net_return_annualized": 0.024859987721532084,
+  "sharpe_observed": 0.020983962460693898,
+  "sharpe_annualized": 0.3331100771502662,
+  "sharpe_ci_95_low": -0.5301986722902786,
+  "sharpe_ci_95_high": 1.196418826590811,
+  "sharpe_ci_method": "hac",
+  "sharpe_hac_eta": 0.9690935139920331,
+  "sharpe_hac_lags": 7,
+  "psr": 0.7718647536942347,
+  "dsr": null,
+  "sr_0": null,
+  "n_trials_reported": 1,
+  "pbo": null,
+  "max_drawdown": -0.12589786966751848,
+  "longest_underwater_days": 398,
+  "calmar_ratio": 0.19746154392591708,
+  "sortino_annualized": 0.49048716819584215,
+  "information_ratio_annualized": -0.8543459296261365,
+  "ticker_breakdown": [
+    {
+      "ticker": "SYN-A",
+      "n_decisions": 1259,
+      "n_non_flat": 640,
+      "hit_rate": 0.5,
+      "mean_ret_contribution": -3.9259695501138023e-07,
+      "sharpe_annualized": -0.002076555991224116
+    },
+    {
+      "ticker": "SYN-B",
+      "n_decisions": 1259,
+      "n_non_flat": 676,
+      "hit_rate": 0.49556213017751477,
+      "mean_ret_contribution": 8.421679585371752e-05,
+      "sharpe_annualized": 0.41080057973590967
+    },
+    {
+      "ticker": "SYN-C",
+      "n_decisions": 1259,
+      "n_non_flat": 690,
+      "hit_rate": 0.49130434782608695,
+      "mean_ret_contribution": 7.844262963867706e-05,
+      "sharpe_annualized": 0.40313531008763287
+    }
+  ],
+  "baselines": [
+    {
+      "name": "buy_and_hold",
+      "net_return_total": 0.5562540003990211,
+      "sharpe_annualized": 0.8292232380997739
+    },
+    {
+      "name": "naive_momentum_20",
+      "net_return_total": 0.13052551835509685,
+      "sharpe_annualized": 0.3331100771502662
+    },
+    {
+      "name": "random",
+      "net_return_total": -0.5118642099735262,
+      "sharpe_annualized": -1.424601690362304
+    }
+  ],
+  "ece": null,
+  "conformal_empirical_coverage": null,
+  "conformal_alpha_nominal": null,
+  "confidence_emitted": false,
+  "leakage_flags": [],
+  "overfitting_flag": null,
+  "reward_hacking_flags": [],
+  "universe_flags": [],
+  "generated_at_utc": "2026-05-15T09:25:25.239102+00:00",
+  "disclaimer": "agent-backtest-lab is a research tool. Not financial advice. Not a trading system. Backtests don't predict the future.",
+  "attribution": "Built by Betty Guo (Dongxin Guo / \u90ed\u4e1c\u6b23), PhD candidate, University of Hong Kong, advised by Prof. Siu-Ming Yiu. ORCID: 0009-0000-2388-1072. Apache-2.0."
+}
