@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/badge/ci-passing-brightgreen.svg)](.github/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](pyproject.toml)
-[![Fixture tests](https://img.shields.io/badge/fixture%20tests-63%20passing-brightgreen.svg)](tests/)
+[![Fixture tests](https://img.shields.io/badge/fixture%20tests-150%20passing-brightgreen.svg)](tests/)
 [![PyPI-ready](https://img.shields.io/badge/pypi--ready-yes-brightgreen.svg)](pyproject.toml)
 
 > ⚠️ **This is a research and evaluation tool. It is not financial, investment, or trading advice. It does not execute trades or connect to brokerages.** It exists to help researchers and practitioners rigorously measure how trading-agent frameworks actually perform — including, and especially, when they perform badly. Backtest results are not predictive of live performance. You are responsible for any decisions you make.
@@ -70,19 +70,33 @@ print(render_markdown(sc))
 
 | Capability | Module | Source |
 |---|---|---|
-| Walk-forward + purged-CV with embargo | `abl.backtest` | López de Prado 2018, Ch. 7 |
+| Walk-forward + purged-CV with embargo | `abl.backtest.cv` | López de Prado 2018, Ch. 7 |
+| Combinatorial Purged K-Fold (v0.2) | `abl.backtest.cv` | López de Prado 2018, Ch. 12 |
 | Hard leakage firewall (refuses date > as_of) | `abl.data.firewall` | — |
 | Retroactive-adjustment defense (filter actions by ex_date) | `abl.data.corporate_actions` | — |
-| Post-hoc leakage detectors | `abl.leakage` | Heuristic; see docstrings |
+| yfinance raw-only loader (v0.3) | `abl.data.yfinance_loader` | — refuses `Adj Close` |
+| Post-hoc leakage detectors | `abl.leakage.detector` | Heuristic; see docstrings |
+| Reward-hacking detection (v0.4) | `abl.leakage.reward_hacking` | IS/OOS Sharpe drop, drawdown widening, calibration divergence |
 | Constant-bps + Almgren-style impact costs | `abl.costs` | Almgren-Chriss 2000, Almgren-Thum-Hauptmann-Li 2005 |
 | Benjamini-Hochberg FDR | `abl.multipletest.bh` | Benjamini & Hochberg 1995 |
+| Benjamini-Yekutieli (v0.2) | `abl.multipletest.bh(method="by")` | Benjamini & Yekutieli 2001 |
+| Bonferroni-Holm step-down (v0.6) | `abl.multipletest.stepwise.bonferroni_holm` | Holm 1979 |
+| Romano-Wolf stepwise (v0.6) | `abl.multipletest.stepwise.romano_wolf_stepwise` | Romano & Wolf 2005 |
 | Probabilistic Sharpe Ratio (PSR) | `abl.multipletest.psr` | Bailey & López de Prado 2012/13 |
 | Deflated Sharpe Ratio (DSR) | `abl.multipletest.dsr` | Bailey & López de Prado 2014 |
+| HAC / Newey-West Sharpe SE (v0.2) | `abl.multipletest.hac` | Lo 2002, Newey-West 1987/1994 |
+| BCa bootstrap CIs (v0.5) | `abl.multipletest.bootstrap` | Efron 1987 |
+| Reality Check / SPA test (v0.2) | `abl.multipletest.spa` | White 2000, Politis-Romano 1994 |
+| Sortino + Information Ratio (v0.6) | `abl.multipletest.risk_metrics` | Sortino-Price 1994 |
+| Drawdown + Calmar (v0.2) | `abl.scorecard.drawdown` | — |
 | Probability of Backtest Overfitting (PBO) via CSCV | `abl.overfitting.cscv` | Bailey, Borwein, López de Prado, Zhu 2017 |
 | Reliability diagrams + ECE | `abl.calibration.reliability` | Guo, Pleiss, Sun, Weinberger ICML 2017 |
 | Split conformal + rolling window | `abl.calibration.conformal` | Vovk-Gammerman-Shafer 2005; Angelopoulos-Bates 2021 |
-| Three baselines, always shown | `abl.baselines` | — |
-| Markdown + JSON scorecard | `abl.scorecard` | — |
+| Six baselines (v0.5: equal-vol, mean-rev, DCA + original three) | `abl.baselines` | — |
+| Per-ticker breakdown + cross-strategy correlation (v0.3) | `abl.scorecard.breakdown` | — |
+| Matplotlib plotters: equity / drawdown / reliability (v0.3) | `abl.plots` | headless Agg |
+| Markdown + JSON + HTML scorecards (v0.4 HTML) | `abl.scorecard` | self-contained HTML w/ inline plots |
+| Five framework adapters (v0.4: FinGPT, FinRobot) | `abl.adapters` | TradingAgents + FinGPT + FinRobot + callable + plain |
 | CLI with non-removable disclaimer | `abl.cli` | — |
 
 Every method names its paper, its assumptions, and the fixture test that verifies it. See [docs/METHODS.md](docs/METHODS.md).
