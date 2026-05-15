@@ -2,6 +2,31 @@
 
 All notable changes to `agent-backtest-lab` are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-05-15
+
+"More rigor." Five additions, each motivated by the Phase 6 hostile review or by user-feedback paths well-trodden in the academic literature. 87 fixture tests pass.
+
+### Added
+
+- **HAC / Newey-West Sharpe SE** (`abl.multipletest.hac.hac_sharpe_ci`). Lo (2002) variance estimator with Bartlett kernel and Newey-West (1987, 1994) automatic bandwidth `q ≈ ⌊4 · (T/100)^(2/9)⌋`. Resolves the Phase 6 review item A1 — the IID-Gaussian CI was overconfident on autocorrelated series. The scorecard now defaults to HAC and exposes the correction factor `η` and lag truncation `q` in the rendered Markdown. `sharpe_ci_method="iid"` preserves the previous behavior.
+- **BH-Yekutieli FDR variant** (`abl.multipletest.bh.benjamini_hochberg(..., method="by")`). Benjamini & Yekutieli (2001). Divides the BH threshold by the harmonic sum `c(m) = Σ 1/k`; controls FDR under arbitrary dependence. The right choice when the dependence structure of the p-values is unknown — common in trading-strategy backtesting (correlated alpha signals).
+- **Combinatorial Purged K-Fold** (`abl.backtest.cv.combinatorial_purged_kfold_splits`). López de Prado (2018), Chapter 12. Returns `C(n_groups, n_test_groups)` splits and exposes `n_recoverable_paths(...)` so users can size the number of independent OOS realizations they get.
+- **Drawdown metrics** (`abl.scorecard.drawdown.drawdown_stats`). Max drawdown, longest underwater stretch (in trading days), and the Calmar ratio (annualized return / |max drawdown|). Computed from the net-of-cost equity curve and rendered as its own table in every scorecard.
+- **Reality Check / SPA test** (`abl.multipletest.spa.reality_check_spa`). White (2000) Reality Check via the Politis-Romano (1994) stationary block bootstrap. Tests "does the best of N strategies beat a specified benchmark, accounting for the N-trial search?" Complements DSR, which tests against `any positive Sharpe`. Hansen (2005) studentization-recentering is not implemented — filed as an open extension.
+
+### Changed
+
+- `abl.scorecard.Scorecard` gained `sharpe_ci_method`, `sharpe_hac_eta`, `sharpe_hac_lags`, `max_drawdown`, `longest_underwater_days`, `calmar_ratio` fields. Backward-compatible additions; downstream consumers reading by attribute name continue to work.
+- `build_scorecard(..., sharpe_ci_method="hac" | "iid")`. Default is `"hac"`.
+
+### Added (tests)
+
+- `tests/test_hac_sharpe.py` (7 tests) — η reduces to 1 with zero autocorr, widens CI on AR(1), reduces to IID at q=0, matches the Bartlett-weighted formula on hand-computed ρ.
+- `tests/test_bh_yekutieli.py` (4 tests) — BY is at least as conservative as BH, textbook example, controls FDR under correlated p-values across 500 reps.
+- `tests/test_combinatorial_cv.py` (5 tests) — split count = C(n, k), train/test disjoint, purge respected, recoverable-paths formula.
+- `tests/test_drawdown.py` (5 tests) — no drawdown when monotone positive, hand-computed three-day case, trough index correct, Calmar finite when DD exists.
+- `tests/test_spa.py` (3 tests) — high p-value on pure noise, low p-value on a clear winner, output-shape sanity.
+
 ## [0.1.0] — 2026-05-14
 
 First public release. Statistical-audit harness for LLM trading-agent frameworks.

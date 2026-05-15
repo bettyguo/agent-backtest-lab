@@ -36,8 +36,10 @@ class BHResult:
     threshold: float | None  # the largest p_(k) that crossed; None if no rejections
 
 
-def benjamini_hochberg(pvals: np.ndarray, alpha: float = 0.05) -> BHResult:
-    """Apply Benjamini-Hochberg FDR control at level alpha.
+def benjamini_hochberg(
+    pvals: np.ndarray, alpha: float = 0.05, *, method: str = "bh"
+) -> BHResult:
+    """Apply BH or BH-Yekutieli FDR control at level alpha.
 
     Parameters
     ----------
@@ -45,13 +47,25 @@ def benjamini_hochberg(pvals: np.ndarray, alpha: float = 0.05) -> BHResult:
         The m p-values to correct.
     alpha : float, default 0.05
         Target FDR level.
+    method : {"bh", "by"}, default "bh"
+        - "bh"  : Benjamini-Hochberg (1995). Controls FDR under independence and PRDS.
+        - "by"  : Benjamini-Yekutieli (2001). Controls FDR under ARBITRARY dependence
+                  by dividing the BH threshold by c(m) = Σ_{k=1}^m 1/k. Conservative
+                  but assumption-free; the right choice when the p-values' dependence
+                  structure is unknown (e.g. multiple correlated trading-strategy variants).
 
     Returns
     -------
     BHResult
         rejected : boolean array. rejected[i] is True if H_i is rejected at FDR alpha.
-        pvals_adjusted : BH q-values, with the standard monotone-increasing fix
-                         (a q-value is never lower than a smaller-ranked p-value's q-value).
+        pvals_adjusted : adjusted q-values, monotone-corrected (a q-value is never
+                         lower than a smaller-ranked p-value's q-value).
+
+    References
+    ----------
+    - Benjamini, Y., & Hochberg, Y. (1995). JRSS-B 57(1), 289-300.
+    - Benjamini, Y., & Yekutieli, D. (2001). The Control of the False Discovery Rate in
+      Multiple Testing under Dependency. *Annals of Statistics*, 29(4), 1165-1188.
     """
     pvals = np.asarray(pvals, dtype=float)
     if pvals.ndim != 1:
@@ -60,6 +74,8 @@ def benjamini_hochberg(pvals: np.ndarray, alpha: float = 0.05) -> BHResult:
         raise ValueError("pvals must be in [0, 1] and finite")
     if not (0.0 < alpha < 1.0):
         raise ValueError("alpha must be in (0, 1)")
+    if method not in ("bh", "by"):
+        raise ValueError(f"method must be 'bh' or 'by', got {method!r}")
 
     m = pvals.size
     if m == 0:
@@ -75,9 +91,11 @@ def benjamini_hochberg(pvals: np.ndarray, alpha: float = 0.05) -> BHResult:
     order = np.argsort(pvals, kind="mergesort")
     p_sorted = pvals[order]
     ranks = np.arange(1, m + 1)
-    thresholds = (ranks / m) * alpha
+    # BH-Yekutieli divides by the harmonic sum c(m) = sum 1/k
+    c_m = float(np.sum(1.0 / ranks)) if method == "by" else 1.0
+    thresholds = (ranks / (m * c_m)) * alpha
 
-    # Largest k with p_(k) <= (k/m) * alpha
+    # Largest k with p_(k) <= (k / (m * c_m)) * alpha
     below = p_sorted <= thresholds
     if below.any():
         k = int(np.max(np.where(below)[0])) + 1  # 1-indexed
@@ -86,8 +104,8 @@ def benjamini_hochberg(pvals: np.ndarray, alpha: float = 0.05) -> BHResult:
         k = 0
         cutoff = None
 
-    # BH-adjusted q-values with monotone correction
-    q_sorted = np.minimum.accumulate((p_sorted * m / ranks)[::-1])[::-1]
+    # BH/BY-adjusted q-values with monotone correction
+    q_sorted = np.minimum.accumulate((p_sorted * m * c_m / ranks)[::-1])[::-1]
     q_sorted = np.clip(q_sorted, 0.0, 1.0)
 
     rejected_sorted = np.zeros(m, dtype=bool)

@@ -14,6 +14,7 @@ There is no flag to suppress these.
 """
 from __future__ import annotations
 
+from abl.scorecard.drawdown import DrawdownStats, drawdown_stats
 from abl.scorecard.flags import UniverseFlag
 from abl.scorecard.report import (
     BaselineRow,
@@ -27,6 +28,8 @@ __all__ = [
     "Scorecard",
     "BaselineRow",
     "UniverseFlag",
+    "DrawdownStats",
+    "drawdown_stats",
     "build_scorecard",
     "render_markdown",
     "render_json",

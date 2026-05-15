@@ -6,6 +6,25 @@ If you spot a transcription error against the cited source, please open an issue
 
 ---
 
+## 0. Sharpe ratio standard error — HAC / Newey-West (Lo 2002)
+
+**Statement.** Under serial correlation, the IID-Gaussian SE understates Var(ŜR). The HAC estimator is
+
+```
+SE_HAC(ŜR) = √( (1 + 0.5·ŜR²) · η(q) / T )
+η(q) = 1 + 2 · Σ_{k=1}^{q} (1 − k/(q+1)) · ρ_k
+```
+
+where ρ_k are sample autocorrelations and the Bartlett kernel weights (1 − k/(q+1)) are the standard Newey-West choice. For q=0 this reduces to the IID formula. For positively-autocorrelated series, η(q) > 1 — the IID CI was overconfident.
+
+**Assumptions.** Weak stationarity. Bartlett kernel; lag truncation q can be set automatically per Newey-West (1994) `q ≈ ⌊4·(T/100)^(2/9)⌋`.
+
+**Source.** Lo, A. W. (2002). The Statistics of Sharpe Ratios. *Financial Analysts Journal*, 58(4), 36-52. · Newey, W. K., & West, K. D. (1987). *Econometrica*, 55(3), 703-708. · Newey, W. K., & West, K. D. (1994). *Review of Economic Studies*, 61(4), 631-653.
+
+**Implementation.** `abl.multipletest.hac.hac_sharpe_ci`. **Tests:** `tests/test_hac_sharpe.py` — reduces to IID at q=0, widens CI under AR(1) positive autocorrelation, matches Bartlett-weighted formula on hand-computed ρ.
+
+---
+
 ## 1. Walk-forward / Purged K-fold CV with embargo
 
 **Statement.** When labels are constructed from forward windows of length `label_window`, a naive K-fold split leaks information into training whenever a training observation's label window overlaps any test observation. Fix: (a) **purge** training observations whose label window `[i, i + label_window]` overlaps the test fold `[test_start, test_end + label_window]`; (b) **embargo** an additional `embargo_pct * n` observations immediately after each test fold to neutralize serial correlation the purge alone cannot remove.
@@ -15,6 +34,12 @@ If you spot a transcription error against the cited source, please open an issue
 **Source.** López de Prado, M. (2018). *Advances in Financial Machine Learning*, Wiley, Chapter 7. https://www.wiley.com/en-us/Advances+in+Financial+Machine+Learning-p-9781119482086
 
 **Implementation.** `abl.backtest.cv.purged_kfold_splits`. **Test:** `tests/test_walkforward.py::test_purged_kfold_purges_label_window`.
+
+### 1b. Combinatorial Purged K-Fold (López de Prado Ch. 12)
+
+**Statement.** Partition the chronological index into `n_groups` equal-sized contiguous groups; for each of the `C(n_groups, n_test_groups)` ways of choosing groups as test, return a split with the corresponding test_idx and a train_idx that excludes the purge+embargo window around each test group. Number of recoverable OOS paths: `C(n_groups − 1, n_test_groups − 1)`.
+
+**Implementation.** `abl.backtest.cv.combinatorial_purged_kfold_splits`, `n_recoverable_paths`. **Tests:** `tests/test_combinatorial_cv.py` — split count = C(n,k), purge respected, recoverable-paths formula.
 
 ---
 
@@ -27,6 +52,24 @@ If you spot a transcription error against the cited source, please open an issue
 **Source.** Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate: A practical and powerful approach to multiple testing. *Journal of the Royal Statistical Society, Series B (Methodological)*, 57(1), 289-300. https://rss.onlinelibrary.wiley.com/doi/10.1111/j.2517-6161.1995.tb02031.x
 
 **Implementation.** `abl.multipletest.bh.benjamini_hochberg`. **Tests:** `tests/test_bh_fdr.py` — textbook example, Monte Carlo verification that empirical FDR ≤ α under independence across 1000 reps.
+
+### 2b. Benjamini-Yekutieli (FDR under arbitrary dependence)
+
+**Statement.** Same procedure as BH but divide the threshold by `c(m) = Σ_{k=1}^m 1/k`. Controls FDR under arbitrary dependence — strictly more conservative, but assumption-free.
+
+**Source.** Benjamini, Y., & Yekutieli, D. (2001). The Control of the False Discovery Rate in Multiple Testing under Dependency. *Annals of Statistics*, 29(4), 1165-1188.
+
+**Implementation.** `abl.multipletest.bh.benjamini_hochberg(..., method="by")`. **Tests:** `tests/test_bh_yekutieli.py` — strictly fewer rejections than BH on the textbook example; controls FDR under correlated p-values across 500 reps.
+
+### 2c. Reality Check / Superior Predictive Ability (SPA) test
+
+**Statement.** Tests "does the best of N strategies beat a specified benchmark, accounting for the N-trial search?" Uses the Politis-Romano stationary block bootstrap on the relative-loss series (`r_strategy − r_benchmark`).
+
+**Source.** White, H. (2000). A Reality Check for Data Snooping. *Econometrica*, 68(5), 1097-1126. · Hansen, P. R. (2005). A Test for Superior Predictive Ability. *J. Business & Economic Statistics*, 23(4), 365-380. · Politis, D. N., & Romano, J. P. (1994). The Stationary Bootstrap. *J. American Statistical Association*, 89(428), 1303-1313.
+
+**Honest scope.** We implement the centered White (2000) variant. Hansen's full studentization-recentering machinery is filed as an open extension — `abl.multipletest.spa` says so in its docstring.
+
+**Implementation.** `abl.multipletest.spa.reality_check_spa`. **Tests:** `tests/test_spa.py` — high p-value on pure noise; low p-value on a clear winner.
 
 ---
 
@@ -115,6 +158,16 @@ Constant cost `c_bps` applied to turnover. The library default is **5 bps each s
 **Sources.** Almgren, R., & Chriss, N. (2000). Optimal Execution of Portfolio Transactions. *J. Risk*. https://www.smallake.kr/wp-content/uploads/2016/03/optliq.pdf · Almgren, R., Thum, C., Hauptmann, E., & Li, H. (2005). Direct Estimation of Equity Market Impact. *Risk*, July 2005. https://www.cis.upenn.edu/~mkearns/finread/costestim.pdf
 
 **Implementation.** `abl.costs.models.ConstantBpsCost`, `AlmgrenImpactCost`, `CompositeCost`. **Tests:** `tests/test_costs.py`.
+
+---
+
+## 8c. Drawdown metrics
+
+**Statement.** From the cumulative net-of-cost equity curve `E_t = Π_{s≤t}(1+r_s)`, compute the running peak `M_t = max_{s≤t} E_s`, drawdown `DD_t = E_t/M_t − 1 ∈ [−1, 0]`, max drawdown `min_t DD_t`, longest underwater stretch (longest contiguous run of `DD_t < 0`), and the Calmar ratio (annualized return / |max drawdown|).
+
+**Notes.** These are path-statistics, not distribution-statistics. They describe what *did* happen, not what *could* happen. The scorecard reports them next to Sharpe so users see both risk-adjusted return and realized rope-to-drawdown.
+
+**Implementation.** `abl.scorecard.drawdown.drawdown_stats`. **Tests:** `tests/test_drawdown.py` — zero drawdown when monotone positive, hand-computed three-day case (−50% trough), trough index correct, Calmar finite when DD exists.
 
 ---
 

@@ -26,6 +26,7 @@ overlap and assert no train index falls within [test_start - label_window, test_
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
 
 import numpy as np
 
@@ -90,3 +91,106 @@ def purged_kfold_splits(
         test_idx = np.arange(test_start, test_end)
         splits.append(PurgedKFoldSplit(train_idx=train_idx, test_idx=test_idx))
     return splits
+
+
+@dataclass(frozen=True)
+class CombinatorialSplit:
+    """One split from a combinatorial purged K-fold scheme.
+
+    `test_groups` is the tuple of group indices that comprise the test set; the test_idx
+    is their union (sorted). `train_idx` is everything outside the purge+embargo window
+    around each test group.
+    """
+
+    test_groups: tuple[int, ...]
+    train_idx: np.ndarray
+    test_idx: np.ndarray
+
+
+def combinatorial_purged_kfold_splits(
+    n: int,
+    n_groups: int,
+    n_test_groups: int,
+    *,
+    label_window: int = 1,
+    embargo_pct: float = 0.01,
+) -> list[CombinatorialSplit]:
+    """Combinatorial Purged K-Fold CV (López de Prado 2018, Chapter 12).
+
+    Partitions the chronological index [0, n) into `n_groups` equal-sized contiguous
+    groups. For each of the C(n_groups, n_test_groups) ways of choosing groups to
+    leave out, returns a split with:
+
+    - `test_idx`: union of the chosen groups' indices.
+    - `train_idx`: everything not in the test_idx and not in the purge+embargo window
+      around any test group.
+
+    The number of distinct "paths" (full out-of-sample series) recoverable from these
+    splits is C(n_groups - 1, n_test_groups - 1). This is the López de Prado
+    generalization of purged K-fold that allows path-level out-of-sample uncertainty.
+
+    Parameters
+    ----------
+    n : int
+        Number of chronologically-ordered observations.
+    n_groups : int
+        Total number of equal-sized groups to partition n into. Must satisfy n >= n_groups.
+    n_test_groups : int
+        Number of groups to hold out as test per split. Must satisfy 1 <= n_test_groups < n_groups.
+    label_window, embargo_pct : as in `purged_kfold_splits`.
+
+    Returns
+    -------
+    list[CombinatorialSplit]
+        Length is C(n_groups, n_test_groups).
+
+    Source
+    ------
+    López de Prado, M. (2018). *Advances in Financial Machine Learning*, Wiley, Chapter 12.
+    """
+    if n_groups < 2 or n_groups > n:
+        raise ValueError(f"n_groups must satisfy 2 <= n_groups <= n; got {n_groups}, n={n}")
+    if n_test_groups < 1 or n_test_groups >= n_groups:
+        raise ValueError(
+            f"n_test_groups must satisfy 1 <= n_test_groups < n_groups; got {n_test_groups}"
+        )
+    if label_window < 0:
+        raise ValueError("label_window must be >= 0")
+    if not (0.0 <= embargo_pct < 1.0):
+        raise ValueError("embargo_pct must be in [0, 1)")
+
+    embargo = int(round(embargo_pct * n))
+    bounds = np.linspace(0, n, n_groups + 1, dtype=int)
+    splits: list[CombinatorialSplit] = []
+    for combo in combinations(range(n_groups), n_test_groups):
+        test_mask = np.zeros(n, dtype=bool)
+        purge_mask = np.zeros(n, dtype=bool)
+        for g in combo:
+            g_lo, g_hi = bounds[g], bounds[g + 1]
+            test_mask[g_lo:g_hi] = True
+            purge_lo = max(0, g_lo - label_window)
+            purge_hi = min(n, g_hi + label_window + embargo)
+            purge_mask[purge_lo:purge_hi] = True
+        train_mask = ~purge_mask & ~test_mask
+        splits.append(
+            CombinatorialSplit(
+                test_groups=combo,
+                train_idx=np.where(train_mask)[0],
+                test_idx=np.where(test_mask)[0],
+            )
+        )
+    return splits
+
+
+def n_recoverable_paths(n_groups: int, n_test_groups: int) -> int:
+    """Number of distinct full-OOS paths recoverable from combinatorial purged K-fold.
+
+    Per López de Prado (2018), this is C(n_groups - 1, n_test_groups - 1). A higher
+    path count gives the user more independent OOS realizations of the strategy curve
+    for variance estimation.
+    """
+    from math import comb
+
+    if n_test_groups < 1 or n_test_groups >= n_groups:
+        raise ValueError("require 1 <= n_test_groups < n_groups")
+    return comb(n_groups - 1, n_test_groups - 1)

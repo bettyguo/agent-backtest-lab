@@ -20,8 +20,10 @@ from abl.config import (
 )
 from abl.leakage.detector import LeakageFlag, detect_leakage
 from abl.multipletest.dsr import deflated_sharpe
+from abl.multipletest.hac import hac_sharpe_ci
 from abl.multipletest.psr import probabilistic_sharpe, sharpe_ratio
 from abl.overfitting.cscv import OverfittingFlag
+from abl.scorecard.drawdown import drawdown_stats
 from abl.scorecard.flags import UniverseFlag
 from abl.types import BacktestResult
 
@@ -50,12 +52,20 @@ class Scorecard:
     sharpe_annualized: float
     sharpe_ci_95_low: float
     sharpe_ci_95_high: float
+    sharpe_ci_method: str  # "iid" or "hac"
+    sharpe_hac_eta: float | None  # HAC serial-correlation correction factor; None for IID
+    sharpe_hac_lags: int | None
     psr: float
     dsr: float | None
     sr_0: float | None
     n_trials_reported: int
 
     pbo: float | None
+
+    # Drawdown metrics — always computed from the net equity curve
+    max_drawdown: float
+    longest_underwater_days: int
+    calmar_ratio: float
 
     baselines: list[BaselineRow] = field(default_factory=list)
 
@@ -108,15 +118,33 @@ def build_scorecard(
     universe_flags: list[UniverseFlag] | None = None,
     annualization: int = DEFAULT_ANNUALIZATION,
     cost_model_name: str = "constant_bps_5bps",
+    sharpe_ci_method: str = "hac",
 ) -> Scorecard:
-    """Assemble a Scorecard from a primary BacktestResult and (always) baselines."""
+    """Assemble a Scorecard from a primary BacktestResult and (always) baselines.
+
+    `sharpe_ci_method`:
+      - "hac" (default): use Newey-West HAC SE for the Sharpe CI. Handles autocorrelation.
+      - "iid": IID-Gaussian SE. Faster, but understates variance under autocorrelation.
+    """
+    if sharpe_ci_method not in ("hac", "iid"):
+        raise ValueError(f"sharpe_ci_method must be 'hac' or 'iid', got {sharpe_ci_method!r}")
     rets = primary.daily_pnl_net.dropna().to_numpy()
     if rets.size < 2:
         raise ValueError("primary result has fewer than 2 net-return observations")
     stats = sharpe_ratio(rets, annualization=annualization)
-    sr_lo_obs, sr_hi_obs = _sharpe_ci(stats)
     scale = float(np.sqrt(annualization))
+    if sharpe_ci_method == "hac":
+        hac_result = hac_sharpe_ci(rets, alpha=0.05, annualization=annualization)
+        sr_lo_obs = hac_result.ci_low_obs
+        sr_hi_obs = hac_result.ci_high_obs
+        sharpe_hac_eta: float | None = hac_result.eta_q
+        sharpe_hac_lags: int | None = hac_result.q_lags
+    else:
+        sr_lo_obs, sr_hi_obs = _sharpe_ci(stats)
+        sharpe_hac_eta = None
+        sharpe_hac_lags = None
     psr = probabilistic_sharpe(rets, sr_benchmark=0.0, annualization=annualization)
+    dd_stats = drawdown_stats(rets, annualization=annualization)
 
     dsr: float | None = None
     sr_0: float | None = None
@@ -188,11 +216,17 @@ def build_scorecard(
         sharpe_annualized=stats.sharpe_annualized,
         sharpe_ci_95_low=sr_lo_obs * scale,
         sharpe_ci_95_high=sr_hi_obs * scale,
+        sharpe_ci_method=sharpe_ci_method,
+        sharpe_hac_eta=sharpe_hac_eta,
+        sharpe_hac_lags=sharpe_hac_lags,
         psr=psr,
         dsr=dsr,
         sr_0=sr_0,
         n_trials_reported=n_trials_reported,
         pbo=(pbo_result["pbo"] if pbo_result is not None else None),
+        max_drawdown=dd_stats.max_drawdown,
+        longest_underwater_days=dd_stats.longest_underwater_days,
+        calmar_ratio=dd_stats.calmar_ratio,
         baselines=baseline_rows,
         ece=ece,
         conformal_empirical_coverage=conformal_emp,
@@ -256,7 +290,15 @@ def render_markdown(sc: Scorecard) -> str:
     lines.append(f"| Net total return | {sc.net_return_total:+.4%} |")
     lines.append(f"| Net annualized return | {sc.net_return_annualized:+.4%} |")
     lines.append(f"| Sharpe (annualized) | {sc.sharpe_annualized:+.3f} |")
-    lines.append(f"| Sharpe 95% CI (annualized)¹ | [{sc.sharpe_ci_95_low:+.3f}, {sc.sharpe_ci_95_high:+.3f}] |")
+    ci_method_label = (
+        f"HAC ({sc.sharpe_ci_method.upper()}, q={sc.sharpe_hac_lags}, η={sc.sharpe_hac_eta:.2f})"
+        if sc.sharpe_ci_method == "hac"
+        else "IID Gaussian"
+    )
+    lines.append(
+        f"| Sharpe 95% CI (annualized)¹ — {ci_method_label} | "
+        f"[{sc.sharpe_ci_95_low:+.3f}, {sc.sharpe_ci_95_high:+.3f}] |"
+    )
     lines.append(f"| PSR (vs SR=0) | {sc.psr:.4f} |")
     if sc.dsr is not None:
         lines.append(f"| **DSR** (deflated, N_trials={sc.n_trials_reported}, SR₀={sc.sr_0:.3f}) | **{sc.dsr:.4f}** |")
@@ -264,6 +306,18 @@ def render_markdown(sc: Scorecard) -> str:
         lines.append("| DSR | not computed (n_trials_reported=1, var_trial_sharpe=0) |")
     if sc.pbo is not None:
         lines.append(f"| PBO (Probability of Backtest Overfitting) | {sc.pbo:.3f} |")
+
+    lines.append("")
+    lines.append("## Drawdown")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|---|---|")
+    lines.append(f"| Max drawdown | {sc.max_drawdown:+.4%} |")
+    lines.append(f"| Longest underwater stretch | {sc.longest_underwater_days} trading days |")
+    if np.isfinite(sc.calmar_ratio):
+        lines.append(f"| Calmar ratio (ann. ret / |max DD|) | {sc.calmar_ratio:+.3f} |")
+    else:
+        lines.append("| Calmar ratio | n/a (no drawdown observed) |")
 
     lines.append("")
     lines.append("## Baselines (same window, same cost model)")
@@ -312,11 +366,19 @@ def render_markdown(sc: Scorecard) -> str:
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append(
-        "¹ The Sharpe 95% CI uses the IID-Gaussian normal approximation (Lo 2002). "
-        "It does NOT correct for serial correlation in the return series; for autocorrelated "
-        "strategies treat it as a lower bound on uncertainty."
-    )
+    if sc.sharpe_ci_method == "hac":
+        lines.append(
+            f"¹ The Sharpe 95% CI uses the HAC / Newey-West SE (Lo 2002 with Bartlett kernel, "
+            f"q={sc.sharpe_hac_lags} lags, autocorrelation correction factor η={sc.sharpe_hac_eta:.2f}). "
+            "η > 1 indicates the IID CI would have been overconfident; η < 1 the opposite. "
+            "Use `build_scorecard(..., sharpe_ci_method='iid')` for the IID-Gaussian variant."
+        )
+    else:
+        lines.append(
+            "¹ The Sharpe 95% CI uses the IID-Gaussian normal approximation (Lo 2002). "
+            "It does NOT correct for serial correlation. Use "
+            "`build_scorecard(..., sharpe_ci_method='hac')` to switch to the Newey-West variant."
+        )
     lines.append("")
     lines.append(f"_{DISCLAIMER_LINE}_")
     lines.append("")

@@ -17,7 +17,9 @@ from __future__ import annotations
 
 from abl.multipletest.bh import benjamini_hochberg
 from abl.multipletest.dsr import deflated_sharpe, expected_max_sharpe_under_null
+from abl.multipletest.hac import HACSharpeResult, auto_lag_truncation, hac_sharpe_ci, newey_west_eta
 from abl.multipletest.psr import probabilistic_sharpe, sharpe_ratio
+from abl.multipletest.spa import SPAResult, reality_check_spa
 
 __all__ = [
     "benjamini_hochberg",
@@ -25,4 +27,10 @@ __all__ = [
     "deflated_sharpe",
     "expected_max_sharpe_under_null",
     "sharpe_ratio",
+    "hac_sharpe_ci",
+    "HACSharpeResult",
+    "newey_west_eta",
+    "auto_lag_truncation",
+    "reality_check_spa",
+    "SPAResult",
 ]
