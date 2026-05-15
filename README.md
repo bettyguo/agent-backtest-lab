@@ -1,6 +1,6 @@
 # agent-backtest-lab
 
-> Before you trust an LLM trading agent, audit it. A statistical-rigor harness — look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, and reward-hacking detection — for trading-agent frameworks.
+> Before you trust an LLM trading agent, audit it. A statistical-rigor harness, look-ahead-leak detection, transaction-cost modeling, multiple-testing correction, calibration, and reward-hacking detection — for trading-agent frameworks.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/badge/ci-passing-brightgreen.svg)](.github/workflows/ci.yml)
