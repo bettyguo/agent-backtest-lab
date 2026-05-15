@@ -1,0 +1,54 @@
+name: Deploy GitHub Pages
+
+# Publish the static site under /docs to GitHub Pages.
+#
+# This workflow assumes the repo's Pages source is set to "GitHub Actions"
+# (Settings -> Pages -> Build and deployment -> Source: GitHub Actions).
+# If the source is set to "Deploy from a branch", this workflow will fail
+# the `configure-pages` step; switch the source to GitHub Actions to use it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+# Required permissions for actions/deploy-pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping queued runs in between
+# the run in-progress and latest queued. Don't cancel in-progress runs.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload /docs as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
