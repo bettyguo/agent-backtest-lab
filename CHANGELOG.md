@@ -2,6 +2,35 @@
 
 All notable changes to `agent-backtest-lab` are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-05-15
+
+"Better CIs, more baselines." 134 fixture tests pass.
+
+### Added
+
+- **BCa bootstrap CIs** (`abl.multipletest.bootstrap.bca_bootstrap_ci`,
+  `bca_sharpe_ci`). Bias-corrected and accelerated bootstrap per Efron (1987).
+  The right CI when the statistic's sampling distribution is NOT well-approximated
+  by a Gaussian — most useful for Sharpe with fat-tailed returns, Sortino, Calmar.
+  Includes the jackknife acceleration estimate; degraded gracefully on degenerate
+  input.
+- **Three new baselines** in `abl.baselines`:
+  - `equal_vol_adapter` — inverse-volatility weighted LONG. The "risk parity for
+    one factor" minimum bar.
+  - `naive_mean_reversion_adapter` — mirror of `naive_momentum`. Useful so a
+    "this agent is just trend-following" hypothesis is falsifiable.
+  - `dca_adapter` — dollar-cost averaging ramp. Captures the "I'd have just
+    averaged in" retail counterfactual that benchmarks beginning-of-trough windows.
+
+### Added (tests)
+
+- `tests/test_bca_bootstrap.py` (6 tests) — BCa for the mean achieves near-95%
+  empirical coverage on Gaussian samples across 200 reps; BCa Sharpe CI contains
+  the point estimate; degenerate input does not crash; acceleration / z_0 are finite.
+- `tests/test_more_baselines.py` (4 tests) — equal-vol and naive-mean-reversion
+  run end-to-end on the bundled fixture; DCA is FLAT during the ramp then LONG;
+  naive-mean-reversion and naive-momentum produce mirror-image directions.
+
 ## [0.4.0] — 2026-05-15
 
 "More adapters, reward-hacking detection, HTML report." 124 fixture tests pass.

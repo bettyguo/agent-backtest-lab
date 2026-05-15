@@ -16,6 +16,7 @@ Sources
 from __future__ import annotations
 
 from abl.multipletest.bh import benjamini_hochberg
+from abl.multipletest.bootstrap import BCaResult, bca_bootstrap_ci, bca_sharpe_ci
 from abl.multipletest.dsr import deflated_sharpe, expected_max_sharpe_under_null
 from abl.multipletest.hac import HACSharpeResult, auto_lag_truncation, hac_sharpe_ci, newey_west_eta
 from abl.multipletest.psr import probabilistic_sharpe, sharpe_ratio
@@ -33,4 +34,7 @@ __all__ = [
     "auto_lag_truncation",
     "reality_check_spa",
     "SPAResult",
+    "bca_bootstrap_ci",
+    "bca_sharpe_ci",
+    "BCaResult",
 ]
