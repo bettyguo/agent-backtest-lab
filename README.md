@@ -26,7 +26,7 @@ A statistical-rigor harness for trading-agent frameworks. Look-ahead-leak detect
 
 A trading agent shows **+40% in a backtest**. Was the agent good — or did it quietly see tomorrow's prices through retroactively-adjusted data, get the best of 50 untracked prompt-tuning attempts, or earn returns no real trader could net of costs?
 
-Independent recent work (Li et al. 2026, [arXiv:2505.07078](https://arxiv.org/abs/2505.07078)) shows that when LLM trading agents are evaluated across decades and 100+ symbols with disciplined methodology, **"advantages deteriorate markedly"** — they're "overly conservative in bull markets, underperforming passive benchmarks" and "overly aggressive in bear markets, incurring heavy losses." The category needs scrutiny, not more agents.
+Recent work shows that when LLM trading agents are evaluated across decades and 100+ symbols with disciplined methodology, **"advantages deteriorate markedly"** — they're "overly conservative in bull markets, underperforming passive benchmarks" and "overly aggressive in bear markets, incurring heavy losses." The category needs scrutiny, not more agents.
 
 `agent-backtest-lab` is the scrutiny.
 
@@ -232,15 +232,6 @@ Track via GitHub issues. Per [`CONTRIBUTING.md`](CONTRIBUTING.md), every new sta
 - 📝 [Changelog](CHANGELOG.md)
 - 🤝 [Contributing guide](CONTRIBUTING.md)
 
----
-
-## Attribution
-
-Built by **Betty Guo** (Dongxin Guo / 郭东欣), final-year PhD candidate in Computer Science, **University of Hong Kong**, advised by **Prof. Siu-Ming Yiu**. ORCID: [0009-0000-2388-1072](https://orcid.org/0009-0000-2388-1072). Apache-2.0.
-
-If this tool helps your research, a citation is appreciated. A BibTeX entry will be added when the v0.1.0 release is tagged on GitHub.
-
----
 
 ## Star history
 
