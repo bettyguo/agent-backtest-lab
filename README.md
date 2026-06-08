@@ -232,7 +232,3 @@ Track via GitHub issues. Per [`CONTRIBUTING.md`](CONTRIBUTING.md), every new sta
 - 📝 [Changelog](CHANGELOG.md)
 - 🤝 [Contributing guide](CONTRIBUTING.md)
 
-
-## Star history
-
-[![Star History Chart](https://api.star-history.com/svg?repos=bettyguo/agent-backtest-lab&type=Date)](https://star-history.com/#bettyguo/agent-backtest-lab&Date)
