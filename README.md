@@ -209,26 +209,3 @@ Requires the [TauricResearch/TradingAgents](https://github.com/TauricResearch/Tr
 
 This library is designed as a **companion** to LLM trading-agent frameworks — primarily [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents). Their job is to *generate* decisions; ours is to *audit* them. We cite them respectfully; this is the rigor layer the category needs, not an attack on it.
 
----
-
-## Roadmap
-
-Track via GitHub issues. Per [`CONTRIBUTING.md`](CONTRIBUTING.md), every new statistical method must ship a known-answer fixture test.
-
-- Real-data point-in-time corporate-action database (currently synthetic-only fixture; yfinance integration exists but vendor data is retrospectively adjusted).
-- More framework adapters (FinMem, AgentQuant, custom).
-- Pyodide build for in-browser interactive demos on the [live site](https://bettyguo.github.io/agent-backtest-lab/).
-- HTML-embedded reliability diagrams + per-strategy comparison view.
-- Survivorship-corrected universe loader (constrained on free-data budget).
-
----
-
-## Resources
-
-- **🌐 [Live site & example scorecards](https://bettyguo.github.io/agent-backtest-lab/)**
-- 📑 [Methods doc](docs/METHODS.md) — every method's formal statement, assumptions, and citation
-- 📜 [Full disclaimer text](docs/DISCLAIMERS.md)
-- 🚀 [Launch plan](docs/LAUNCH.md)
-- 📝 [Changelog](CHANGELOG.md)
-- 🤝 [Contributing guide](CONTRIBUTING.md)
-
